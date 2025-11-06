@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Reserva de Sala</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #eef2f7;
+      color: #2c3e50;
+    }
+
+    header {
+      background-color: #1f2d3d;
+      color: white;
+      padding: 20px 40px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    main {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    }
+
+    h1, h2 {
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: grid;
+      gap: 15px;
+    }
+
+    label {
+      font-weight: 600;
+    }
+
+    input, select, textarea, button {
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    button {
+      background-color: #0077cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #005fa3;
+    }
+
+    .erro {
+      color: #e74c3c;
+      font-weight: 600;
+    }
+
+    .reserva {
+      margin-top: 40px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background-color: #f9fbfc;
+      margin-bottom: 15px;
+      padding: 15px;
+      border-left: 6px solid #0077cc;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .btn-cancelar {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .btn-cancelar:hover {
+      background-color: #c0392b;
+    }
+
+    .icon {
+      margin-right: 8px;
+      color: #0077cc;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1><i class="fa-solid fa-calendar-check icon"></i> Reserva de Sala</h1>
+  </header>
+
+  <main>
+    <form id="formReserva">
+      <label for="nome">Nome:</label>
+      <input type="text" id="nome" required>
+
+      <label for="data">Data:</label>
+      <input type="date" id="data" required>
+
+      <label for="hora">Hora de Início:</label>
+      <input type="time" id="hora" required>
+
+      <label for="duracao">Duração:</label>
+      <select id="duracao">
+        <option value="0.5">30 minutos</option>
+        <option value="1">1 hora</option>
+        <option value="1.5">1 hora e 30 minutos</option>
+        <option value="2">2 horas</option>
+        <option value="2.5">2 horas e 30 minutos</option>
+        <option value="3">3 horas</option>
+      </select>
+
+      <label for="motivo">Motivo da Reserva:</label>
+      <textarea id="motivo" placeholder="Descreva o motivo da reserva..." required></textarea>
+
+      <button type="submit"><i class="fa-solid fa-plus icon"></i> Reservar</button>
+      <div class="erro" id="erroMsg"></div>
+    </form>
+
+    <div class="reserva">
+      <h2><i class="fa-solid fa-clock icon"></i> Reservas Futuras</h2>
+      <ul id="listaReservas"></ul>
+    </div>
+  </main>
+
+  <script>
+    const reservas = [];
+
+    document.getElementById('formReserva').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const nome = document.getElementById('nome').value.trim();
+      const data = document.getElementById('data').value;
+      const hora = document.getElementById('hora').value;
+      const duracao = parseFloat(document.getElementById('duracao').value);
+      const motivo = document.getElementById('motivo').value.trim();
+      const erroMsg = document.getElementById('erroMsg');
+
+      if (!nome || !data || !hora || !duracao || !motivo) {
+        erroMsg.textContent = 'Preencha todos os campos.';
+        return;
+      }
+
+      const inicio = new Date(`${data}T${hora}`);
+      const fim = new Date(inicio.getTime() + duracao * 60 * 60 * 1000);
+
+      const conflito = reservas.some(r => {
+        const rInicio = new Date(r.inicio);
+        const rFim = new Date(r.fim);
+        return inicio < rFim && fim > rInicio;
+      });
+
+      if (conflito) {
+        erroMsg.textContent = 'Sala já reservada nesse horário.';
+        return;
+      }
+
+      reservas.push({ nome, inicio, fim, motivo });
+      erroMsg.textContent = '';
+      atualizarLista();
+      this.reset();
+    });
+
+    function atualizarLista() {
+      const lista = document.getElementById('listaReservas');
+      lista.innerHTML = '';
+
+      reservas.sort((a, b) => new Date(a.inicio) - new Date(b.inicio));
+
+      reservas.forEach((r, index) => {
+        const inicio = new Date(r.inicio);
+        const fim = new Date(r.fim);
+        const inicioFormatado = inicio.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        const fimFormatado = fim.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <strong>${r.nome}</strong> reservou em ${inicioFormatado} até ${fimFormatado}<br>
+          <em>Motivo:</em> ${r.motivo}
+          <br><button class="btn-cancelar" onclick="cancelarReserva(${index})">Cancelar</button>
+        `;
+        lista.appendChild(li);
+      });
+    }
+
+    function cancelarReserva(index) {
+      const nomeSolicitante = prompt("Digite seu nome para confirmar o cancelamento:");
+      if (nomeSolicitante && nomeSolicitante.trim() === reservas[index].nome) {
+        reservas.splice(index, 1);
+        atualizarLista();
+      } else {
+        alert("Você não tem permissão para cancelar esta reserva.");
+      }
+    }
+  </script>
+
+</body>
+</html>
